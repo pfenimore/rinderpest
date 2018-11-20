@@ -1,8 +1,7 @@
-# Rinderpest public ui.R
-# GPL v3
+#Rinderpest public ui.R
 
 shinyUI(fluidPage(    
-  h3("Simulate a Rinderpest epidemic starting from an index case", align = "center"),                                                                                                            
+  h3("Simulate a Rinderpest epidemic", align = "center"),                                                                                                            
       fluidRow(
         ####################  Left Hand Column ################# 
           column(2,  
@@ -12,7 +11,7 @@ shinyUI(fluidPage(
                       choices = c("Default disease parameters" = "No", "Examples" = "Use Case", "Load parameters" = "Load parameters"), inline = FALSE),
           
           conditionalPanel(condition = "input.ModelType == 'Use Case'",
-                           selectInput("Example", "Example Use Case", choices = c("Rinderpest: Pakistan 1994"))),
+                           selectInput("Example", "Example Use Case", choices = c("Rinderpest: Pakistan 1994", "Rinderpest: Fremantle"))),
                             
           conditionalPanel(condition = "input.ModelType == 'Load parameters'",
                            fileInput('inputs', 'Choose file', accept = '.csv'),
@@ -32,17 +31,10 @@ shinyUI(fluidPage(
             )
           ),  
           
-          radioButtons("DS", label = "",
-                       choices = c("Deterministic" = "Deterministic", "Hybrid" = "Stochastic"), inline = TRUE),
-          
-          conditionalPanel(condition = "input.DS == 'Stochastic'",
-                           numericInput("N_ave", "Simulations to average", 1, min = 1, max = 1000000, step=1
-                           )),
-          
-          numericInput("weeks_to_sim", "Simulation duration (weeks)", weeks_to_sim_BasicStart,
+          numericInput("weeks_to_sim", "Duration of simulation (weeks)", weeks_to_sim_BasicStart,
                        min = 2, max = 90, step=1
           ),
-          numericInput("DetectSick", "Number with clear symptoms needed for detection", value = 5,#25,                                                                                                                       
+          numericInput("DetectSick", "Number sick when disease is detected", value = 5,#25,                                                                                                                       
                       min = 0, max = 500, step = 1
           ),
           selectInput("AggFact", "Multiplicative change to geo box length", choices = c(0.5, 1, 1.5, 2), selected = AggFact_BasicStart),
@@ -53,7 +45,8 @@ shinyUI(fluidPage(
           textOutput("CullDay"),
           htmlOutput("BoundaryReached"),
           br(),  # creates space
-          downloadButton('Start', 'Getting Started'),
+          tags$a(href="https://www.frontiersin.org/articles/10.3389/fvets.2018.00182/full", "Download the Paper for this software"),
+          # downloadButton('Documentation', 'Paper'),
           br(),  # creates space
           downloadButton('downloadData', 'Current inputs and results'),
           br()  # creates space
@@ -65,16 +58,14 @@ shinyUI(fluidPage(
             column(6,
                 h5("Cattle Population"),
                 leafletOutput("mymap"),
+                h5("Brush and double-click to zoom"),
                 plotOutput("ggplotCh", height = 300,
                        dblclick = "ggplotCh_dblclick",
                        brush = brushOpts(
                          id = "ggplotCh_brush",
                          resetOnNew = TRUE
                        )
-                ),
-                radioButtons("LogLin", label = "",
-                             choices = c("Logarithmic" = "Logarithmic", "Linear" = "Linear"), inline = TRUE),
-                h5("Brush and double-click to zoom")
+                )
             ),  #end of middle left column
             column(6,
                 tableOutput("consequence"),
@@ -84,17 +75,18 @@ shinyUI(fluidPage(
                       radioButtons("epiOutMapButton", "Choose quantity to plot",
                              c("Original Population" = "orig",
                                "Cumulative deaths" = "deaths",
-                               "log(Weekly incidence)" = "log(incidence)",
                                "Weekly incidence" = "incidence",
                                "Prevalence" = "prevalence",
+                               #"current susceptibles" = "current susceptibles",
+                               #"Weekly fractional incidence" = "fincidence",
                                "Cumulative cases" = "Cumulative cases",
-                               "fraction vaccinated" = "vaccinated",
-                               "fraction immune by vaccination" = "vacimmune"),
+                               "immune by vaccination" = "vacimmune"),
                                selected="orig"
                     )
                   ), 
                   column(6,
-                      sliderInput("P.wk", "Week of simulated epidemic to show in results table and image-map", min=1, max=20, step = 1, ticks = FALSE, value=4, animate=TRUE)
+                      sliderInput("P.wk", "Week of simulated epidemic to show in results table and image-map", min=1, max=20, step = 1, ticks = FALSE, value=4, animate=TRUE),
+                      downloadButton('ImageMap', 'Current Image Map')
                   ) 
                 )
             ) #end of middle right column
@@ -106,18 +98,8 @@ shinyUI(fluidPage(
               tabPanel("Spread", 
                     h4("Short Range"),
                     column(4,
-                       sliderInput("dl", "Characteristic distance (km)",                                                                                                                        
-                                 min = 0.5,                                                                                                                                  
-                                 max = 10,                                                                                                                                       
-                                 value = dl_BasicStart,
-                                 step = 0.1
-                      ),
-                      sliderInput("srmcd", "Delay of control after epidemic detection (days)",                                                                                                                        
-                                 min = 0,                                                                                                                                
-                                 max = 60,                                                                                                                                       
-                                 value = 0,
-                                 step = 1 #5
-                      )
+                           numericInput("dl", "Characteristic distance (km)", value = dl_BasicStart, min = 0.5, max = 10, step = 0.1),
+                           numericInput("srmcd", "Delay of control after epidemic detection (days)", value = 1, min = 0, max = 60, step = 1)
                     ),
                     column(8,
                            plotOutput("SpreadPlot", height = "300px")
@@ -187,18 +169,24 @@ shinyUI(fluidPage(
                         sliderInput("Culldelay", "Delay of culling after epidemic detection (days)",
                                    min = 0,
                                    max = 60,
-                                   value = 7
+                                   value = 14
                         ),
                         radioButtons("CullFrom", label = "Cull from which states:",
                                      choices = c("Cull really sick animals only (state H)" = "Honly", 
                                                  "Cull all infectious animals (states I and H)" = "IandH", 
-                                                 "Cull all untreated and unvaccinated" = "All"), selected = "All", inline = FALSE),
+                                                 "Cull all untreated and unvaccinated" = "All"), selected="All", inline = FALSE),
                         sliderInput("CullRad",
                                     "Radius of culling ring (km)",
-                                    min = 3,
+                                    min = 1,
                                     max = 30,
-                                    value = 8
+                                    value = 5
+                        ),
+                        sliderInput("CdelayPInfect", "Delay between when animals have first detectable symptoms in a geographic block and when culling begins in and around that block (days)",
+                                    min = 0,
+                                    max = 7,
+                                    value = 1
                         )
+                        
                 )  
               ),
               ####################  Vaccination ################# 
@@ -221,9 +209,9 @@ shinyUI(fluidPage(
                         ),
                         sliderInput("vacrad",
                                     "Radius of vaccination ring for vaccination around cases (km)",
-                                    min = vacradmin_BasicStart,
+                                    min = 3,
                                     max = 30,
-                                    value = vacrad_BasicStart #4#2    
+                                    value = vacrad_BasicStart #4#2    #pixel size is 3 nautical miles (unaggregated)
                         ),
                         sliderInput("vacprog", "Time to build immunity after vaccination (days)",
                                     min = 1,  
@@ -247,23 +235,44 @@ shinyUI(fluidPage(
                                       max = 10,                                                                                                                                       
                                       value = 1/kEI_Rind
                           ),
-                          numericInput("kIH", "Rate from I to H (1/days)", val = kIH_Rind,
-                                    min = 0, max = 20),
-                          numericInput("kIR", "Rate from I to R (1/days)", val = kIR_Rind,
-                                    min = 0, max = 20),
+                          # numericInput("kIH", "Rate from I to H (1/days)", val = kIH_Rind,
+                          #           min = 0, max = 20),
+                          # numericInput("kIR", "Rate from I to R (1/days)", val = kIR_Rind,
+                          #           min = 0, max = 20),
                        
-                          sliderInput("mortRate", "Fraction of seriously ill that die (w/o treatment)",                                                                                                                        
-                                      min = 0,                                                                                                                                  
-                                      max = 1,
-                                      value = kHD_Rind/(kHD_Rind+kHR_Rind)
-                          ),
+                          fluidRow(
+                            column(6,     
+                                numericInput("kIH", "k(I->H) (1/day)", val = kIH_Rind, min = 0, max = 20),
+                                numericInput("kHD", "k(H->D) (1/day)", val = kHD_Rind, min = 0, max = 20)
+                                # numericInput("kHtD", "k(Ht->D) (1/day)", val = kHtD_Rind, min = 0, max = 20)
+                                # numericInput("kIH", "k(I->H) (1/day)", val = kIH_H7N9, min = 0, max = 20),
+                                # numericInput("kHD", "k(H->D) (1/day)", val = kHD_H7N9, min = 0, max = 20),
+                                # numericInput("kHtD", "k(Ht->D) (1/day)", val = kHtD_H7N9, min = 0, max = 20)
+                                
+                            ),
+                            column(6, 
+                                numericInput("kIR", "k(I->R) (1/day)", val = kIR_Rind, min = 0, max = 20),
+                                numericInput("kHR", "k(H->R) (1/day)", val = kHR_Rind, min = 0, max = 20)
+                                # numericInput("kHtR", "k(Ht->R) (1/day)", val = kHtR_Rind, min = 0, max = 20)
+                                # numericInput("kIR", "k(I->R) (1/day)", val = kIR_H7N9, min = 0, max = 20),
+                                # numericInput("kHR", "k(H->R) (1/day)", val = kHR_H7N9, min = 0, max = 20),
+                                # numericInput("kHtR", "k(Ht->R) (1/day)", val = kHtR_H7N9, min = 0, max = 20)
+                            )
+                          ),  
+                       
+                          # sliderInput("mortRate", "Fraction of seriously ill that die (w/o treatment)",                                                                                                                        
+                          #             min = 0,                                                                                                                                  
+                          #             max = 1,
+                          #             value = kHD_Rind/(kHD_Rind+kHR_Rind)
+                          # ),
+                          
                           sliderInput("treated", "Fraction of seriously ill that are treated",                                                                                                                        
                                    min = 0,                                                                                                                                  
                                    max = 1,
                                    value = Rr_HHt_Rind/(Rr_HHt_Rind+1)
                           ),
                        
-                          tableOutput("rates"),
+                          #tableOutput("rates"),
                           plotOutput("diseaseProg", height = "300px", width = "300px")
               )
         ) # End of tabset       
