@@ -245,33 +245,33 @@ AvoidRedundantEigenValues <- function(CullRates, K1, K2, K4, kEIvalue, ke, kV) {
   ### There is no check for k = kEI, K1, K2, K4.  
   if (any(kVkCSDiff==ke)) {           # Assuming here that ke is never 0.  There is no vaccine that causes immediate immunity. !!!
     index <- which(kVkCSDiff == ke)
-    kCS(index) <- kCS(index) + 0.001
+    kCS[index] <- kCS[index] + 0.001
   }
   
   if (any(CrateDiffIH == K2-K1))  {   # Would have redundant eigenvalue problem.  The case K1=K2 was taken care of in Define_Ks.
     index <- which(CrateDiffIH == K2-K1)
-    kCH(index) <- kCH(index) + 0.001  
+    kCH[index] <- kCH[index] + 0.001  
   }
   if (any(kCH == K4-K2))  {           # Would have redundant eigenvalue problem.  The case K2=K4 was taken care of in Define_Ks.
     index <- which(kCH == K4-K2)
-    kCH(index) <- kCH(index) + 0.001
+    kCH[index] <- kCH[index] + 0.001
   }
   if (any(kCI == K4-K1))  {           # Would have redundant eigenvalue problem.  The case K1=K4 was taken care of in Define_Ks.
     index <- which(kCH == K4-K1)
-    kCH(index) <- kCI(index) + 0.0005
+    kCH[index] <- kCI[index] + 0.0005
   }
   
   if (any(CrateDiffEI == K1-kEIvalue)) {  # Would have redundant eigenvalue problem.  The case K1=kEIvalue was taken care of in Define_Ks.
     index <- which(CrateDiffEI == K1-kEIvalue)
-    kCE(index) <- kCE(index) + 0.0002
+    kCE[index] <- kCE[index] + 0.0002
   }
   if (any(CrateDiffEH == K2-kEIvalue)) {  # Would have redundant eigenvalue problem.  The case K2=kEIvalue was taken care of in Define_Ks.
     index <- which(CrateDiffEH == K2-kEIvalue)
-    kCE(index) <- kCE(index) + 0.0002
+    kCE[index] <- kCE[index] + 0.0002
   }
   if (any(kCE == K4-kEIvalue)) {          # Would have redundant eigenvalue problem.  The case K1=kEIvalue was taken care of in Define_Ks.
     index <- which(kCE == K4-kEIvalue)
-    kCE(index) <- kCE(index) + 0.0002
+    kCE[index] <- kCE[index] + 0.0002
   }
   CullRates <- list(kCS=kCS,kCE=kCE,kCI=kCI,kCH=kCH)
   return(CullRates)
